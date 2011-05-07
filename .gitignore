@@ -1,0 +1,12 @@
+application/controllers/*
+application/helpers/*
+application/models/*
+application/views/*
+system/config/*
+system/libraries/*
+*.komodoproject
+.htaccess
+!application/controllers/welcome.php
+!application/views/welcome_message.php
+!system/config/config.development.php
+!.gitignore
