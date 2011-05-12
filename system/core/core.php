@@ -44,7 +44,7 @@ class Config {
 	 * @param string	an optional default value returned if the property is not found
 	 * @return string
 	 */
-	public static function get($property = null, $default = null)
+	public static function get($property = NULL, $default = NULL)
 	{
 		if (empty($property)) return self::$config;
 		return isset(self::$config[$property]) ? self::$config[$property] : $default;
@@ -58,7 +58,7 @@ class Config {
 	 * @param string	the value to be assigned to the property (optional if the property is an array)
 	 * @return void
 	 */
-	public static function set($property, $value = null)
+	public static function set($property, $value = NULL)
 	{
 		if (is_array($property))
 		{
@@ -289,11 +289,11 @@ class Database {
 				$this->dbh = new pdo("{$driver}:dbname={$database};host={$host}",
 						     $username,
 						     $password,
-						     array(PDO::ATTR_PERSISTENT => true));
+						     array(PDO::ATTR_PERSISTENT => TRUE));
 				$this->dbh->exec('SET NAMES utf8');
 				break;
 			case 'sqlite':
-				$this->dbh = new pdo("{$driver}:{$database}", array(PDO::ATTR_PERSISTENT => true));
+				$this->dbh = new pdo("{$driver}:{$database}", array(PDO::ATTR_PERSISTENT => TRUE));
 				break;
 			default:
 				trigger_error('DB Connection Failed. The driver type set in the configuration file wasn\'t recognized.',
