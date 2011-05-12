@@ -25,7 +25,7 @@ _...needs content..._ (but the code is very well-documented!)
 
 ## Requirements
 
-Apache with mod_rewrite
+Apache with mod_rewrite  
 PHP 5
 
 ## License
