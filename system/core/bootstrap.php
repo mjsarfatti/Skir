@@ -72,14 +72,13 @@
 	}
 
 	// Autoload libraries, models and helpers as per configuration
-	foreach(array('library', 'model', 'helper') as $type)
+	foreach(c::get('autoload') as $type => $files)
 	{
-		$property = (array) c::get("autoload_$type");
-		if (!empty($property[0]))
+		if (!empty($files[0]))
 		{
-			foreach($property as $class)
+			foreach($files as $file)
 			{
-				l::$type($class);
+				l::$type($file);
 			}
 		}
 	}

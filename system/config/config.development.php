@@ -27,9 +27,9 @@
  |-------------------------------------------------------------------------
 */
 $config['default_controller'] = 'welcome';
-$config['autoload_library'] = array('');
-$config['autoload_model'] = array('');
-$config['autoload_helper'] = array('');
+$config['autoload']['library'] = array('');
+$config['autoload']['model'] = array('');
+$config['autoload']['helper'] = array('');
 
 /*
  |-------------------------------------------------------------------------
