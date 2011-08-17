@@ -64,6 +64,7 @@
 
 	// Load and instantiate the controller
 	require $controller_file;
+	$controller = str_replace('-', '_', $controller);
 	$SK = new $controller;
 
 	if(!is_callable(array($SK, $method ? $method : 'index')))

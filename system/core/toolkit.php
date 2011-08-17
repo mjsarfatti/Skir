@@ -134,6 +134,7 @@ function redirect($url = '/', $code = '301')
  * Cookie Class
  *
  * This class helps to handle browser cookies
+ * Shortcut: 'ck'
  */
 
 class Cookie {
@@ -197,6 +198,7 @@ class Cookie {
  * Output Class
  *
  * This class helps to handle content output
+ * Shortcut: 'o'
  */
 
 class Output {
