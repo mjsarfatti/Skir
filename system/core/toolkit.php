@@ -195,6 +195,208 @@ class Cookie {
 
 
 /**
+ * Form Class
+ *
+ * This class helps to handle form submission and validation
+ * Shortcut: 'f'
+ */
+
+class Form {
+		
+	// Initializes the 'error' array
+	private static $_errors = array();
+
+	/**
+	 * Validate an input field
+	 *
+	 * @access		public
+	 * @param string	the name of the field to be validated
+	 * @param string	a human readable name for the field (to be used when showing errors)
+	 * @param string	the rule(s) to be applied
+	 * @return bool
+	 */
+	public static function validate($field, $label = '', $rules = '')
+	{
+		// If the field label wasn't passed we use the field name
+		$label = ($label == '') ? $field : $label;
+		
+		$rules = explode("|", $rules);
+		
+		$str = $_POST[$field];
+			
+		foreach ($rules as $rule) {
+		
+			// Strip the parameter (if exists) from the rule
+			// Rules can contain a parameter: max_length[5]
+			$param = FALSE;
+			if (preg_match("/(.*?)\[(.*)\]/", $rule, $match))
+			{
+				$rule	= $match[1];
+				$param	= $match[2];
+			}
+			
+			switch ($rule) {
+			
+				case 'required':					
+					if (!is_array($str))
+					{
+						$result = (trim($str) == '') ? FALSE : TRUE;
+					}
+					else
+					{
+						$result = (!empty($str));
+					}
+					if (!$result) self:$_errors[] = array('field' => $field, 'rule' => $rule, 'label' => $label, 'param' => $param);
+					break;
+					
+				case 'max_length':
+					if (preg_match("/[^0-9]/", $param))
+					{
+						$result = TRUE;
+					}
+					$result = (strlen($str) > $param) ? FALSE : TRUE;
+					if (!$result) self:$_errors[] = array('field' => $field, 'rule' => $rule, 'label' => $label, 'param' => $param);
+					break;
+					
+				case 'min_length':
+					if (preg_match("/[^0-9]/", $param))
+					{
+						$result = TRUE;
+					}
+					$result = (strlen($str) < $param) ? FALSE : TRUE;
+					if (!$result) self:$_errors[] = array('field' => $field, 'rule' => $rule, 'label' => $label, 'param' => $param);
+					break;
+					
+				case 'regex':
+					$result = (!preg_match($param, $str)) ? FALSE : TRUE;
+					if (!$result) self:$_errors[] = array('field' => $field, 'rule' => $rule, 'label' => $label, 'param' => $param);
+					break;
+					
+				case 'matches':
+					if (!isset($_POST[$param]))
+					{
+						$result = FALSE;
+					}			
+					$param = $_POST[$param];			
+					$result = ($str !== $param) ? FALSE : TRUE;
+					if (!$result) self:$_errors[] = array('field' => $field, 'rule' => $rule, 'label' => $label, 'param' => $param);
+					break;
+					
+				case 'unique':
+					list($table, $param)=explode('.', $param);
+					$db =& database::get_instance();
+					$result = $db->exists($table, $param, $str);
+					if (!$result) self:$_errors[] = array('field' => $field, 'rule' => $rule, 'label' => $label, 'param' => $param);
+					break;
+					
+				case 'date':
+					$time = strtotime($str);
+					if(!$time) $result = FALSE;			
+					$year	= date('Y', $time);
+					$month = date('m', $time);
+					$day	 = date('d', $time);			
+					$result = (!checkdate($month, $day, $year)) ? FALSE : $time;
+					if (!$result) self:$_errors[] = array('field' => $field, 'rule' => $rule, 'label' => $label, 'param' => $param);
+					break;
+					
+				case 'email':
+					$result = (!filter_var($str, FILTER_VALIDATE_EMAIL)) ? FALSE : TRUE;
+					if (!$result) self:$_errors[] = array('field' => $field, 'rule' => $rule, 'label' => $label, 'param' => $param);
+					break;
+					
+				case 'url':
+					$result = (!filter_var($str, FILTER_VALIDATE_URL)) ? FALSE : TRUE;
+					if (!$result) self:$_errors[] = array('field' => $field, 'rule' => $rule, 'label' => $label, 'param' => $param);
+					break;
+					
+				default:
+					$result = $rule($str);
+					
+				// TODO: Add 'number', 'int', 'Name', 'username', 'password', 'range'
+			}
+			
+			$str = (is_bool($result)) ? $str : $result;
+		}
+		
+		return (empty(self::$_errors)) ? $str : FALSE;
+	}
+	
+	/**
+	 * Show errors from validation
+	 *
+	 * @access		public
+	 * @param string	the HTML delimiter between error messages
+	 * @param string	the language code
+	 * @param string	the (optional) field name
+	 * @return bool
+	 */	
+	public static function show_errors($delimiter = '<br />', $lang = 'english', $field = '')
+	{
+		// Do nothing if there are no errors
+		if (empty(self::$_errors)) return;
+		
+		//l::lang('form_validation', $lang);
+		
+		$loop = FALSE;
+		
+		foreach (self::$_errors as $error)
+		{
+			if (empty($field) OR $error['field'] == $field)
+			{
+				if ($loop) echo $delimiter;
+				
+				switch ($error['rule'])
+				{
+					case 'required':					
+						echo "The $error['label'] field is required.";
+						// printf($error_msg['required'], $error['label']);
+						break;
+						
+					case 'max_length':
+						echo "The $error['label'] field cannot exceed $error['param'] characters in length.";
+						break;
+						
+					case 'min_length':
+						echo "The $error['label'] field must be at least $error['param'] characters in length.";
+						break;
+						
+					case 'regex':
+						echo "The $error['label'] field is not in the correct format.";
+						break;
+						
+					case 'matches':
+						echo "The $error['label'] field does not match the $error['param'] field.";
+						break;
+						
+					case 'unique':
+						echo "The $error['label'] field must contain a unique value.";
+						break;
+						
+					case 'date':
+						echo "The $error['label'] field is not a valid date.";
+						break;
+						
+					case 'email':
+						echo "The $error['label'] field is not a valid email address.";
+						break;
+						
+					case 'url':
+						echo "The $error['label'] field is not a valid URL";
+						break;
+						
+					default:
+						echo "The $error['label'] field is not valid.";
+				}
+				
+				$loop = TRUE;
+			}
+		}
+	}
+
+}
+
+
+/**
  * Output Class
  *
  * This class helps to handle content output
@@ -268,8 +470,9 @@ class Output {
  |-------------------------------------------------------------------------
 */
 
-class_alias('Output', 'o');
 class_alias('Cookie', 'ck');
+class_alias('Form', 'f');
+class_alias('Output', 'o');
 
 
 /* End of file toolkit.php
