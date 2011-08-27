@@ -187,19 +187,6 @@ class Load {
 		return (self::_file(SK_PATH.APPLICATION.'helpers/'.$helper.'.php', 'helper', $helper));
 	}
 
-	/**
-	 * Language File Loader
-	 *
-	 * @access		public
-	 * @param string	the file name
-	 * @param string	the language corresponding folder
-	 * @return boolean
-	 */
-	public static function lang($file, $language = 'english')
-	{
-		return (self::_file(SK_PATH.SYSTEM.'language/'.$language.'/'.$file.'.php', 'language file', $file));
-	}
-
 }
 
 

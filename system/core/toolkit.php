@@ -151,7 +151,7 @@ class Cookie {
 	 * @param bool		whether the cookie should only be transmitted over a secure HTTPS connection from the client
 	 * @return void
 	 */
-	function set($name, $value, $expire = 3600, $path = '/', $domain = '', $secure = FALSE)
+	public static function set($name, $value, $expire = 3600, $path = '/', $domain = '', $secure = FALSE)
 	{
 		if (is_array($value))
 		{
@@ -169,9 +169,10 @@ class Cookie {
 	 * @param bool		whether the value should be treated as a json string and decoded to an assoc array
 	 * @return void
 	 */
-	function get($name, $json = FALSE)
+	public static function get($field, $json = FALSE)
 	{
-		$value = $json ? json_decode($_COOKIE[$name], TRUE) : $_COOKIE[$name];
+		$value = (isset($_COOKIE[$field])) ? $_COOKIE[$field] : false;
+		$value = $json ? json_decode($value, TRUE) : $value;
 		return $value;
 	}
 
@@ -185,7 +186,7 @@ class Cookie {
 	 * @param bool		safe connection (as set on cookie set)
 	 * @return void
 	 */
-	function delete($name, $path = '/', $domain = '', $secure = FALSE)
+	public static function delete($name, $path = '/', $domain = '', $secure = FALSE)
 	{
 		setcookie($name, false, time() - 3600, $path, $domain, $secure);
 		unset($_COOKIE[$name]);
@@ -203,26 +204,29 @@ class Cookie {
 
 class Form {
 		
-	// Initializes the 'error' array
+	// Initializes the 'errors' array
 	private static $_errors = array();
+	
+	public static $has_errors = FALSE;
 
 	/**
 	 * Validate an input field
 	 *
 	 * @access		public
 	 * @param string	the name of the field to be validated
-	 * @param string	a human readable name for the field (to be used when showing errors)
 	 * @param string	the rule(s) to be applied
+	 * @param string	a human readable name for the field (to be used when showing errors)
 	 * @return bool
 	 */
-	public static function validate($field, $label = '', $rules = '')
+	public static function validate($field, $rules = '', $label = '')
 	{
 		// If the field label wasn't passed we use the field name
 		$label = ($label == '') ? $field : $label;
 		
+		// Multiple rules can be indicated (e.g. 'required|max_length[16]|unique')
 		$rules = explode("|", $rules);
 		
-		$str = $_POST[$field];
+		$str = i::post($field);
 			
 		foreach ($rules as $rule) {
 		
@@ -246,7 +250,6 @@ class Form {
 					{
 						$result = (!empty($str));
 					}
-					if (!$result) self:$_errors[] = array('field' => $field, 'rule' => $rule, 'label' => $label, 'param' => $param);
 					break;
 					
 				case 'max_length':
@@ -255,7 +258,6 @@ class Form {
 						$result = TRUE;
 					}
 					$result = (strlen($str) > $param) ? FALSE : TRUE;
-					if (!$result) self:$_errors[] = array('field' => $field, 'rule' => $rule, 'label' => $label, 'param' => $param);
 					break;
 					
 				case 'min_length':
@@ -264,12 +266,42 @@ class Form {
 						$result = TRUE;
 					}
 					$result = (strlen($str) < $param) ? FALSE : TRUE;
-					if (!$result) self:$_errors[] = array('field' => $field, 'rule' => $rule, 'label' => $label, 'param' => $param);
+					break;
+					
+				case 'alpha':
+					$result = (!preg_match("/^([a-z])+$/i", $str)) ? FALSE : TRUE;
+					break;
+					
+				case 'alpha_num':
+					$result = (!preg_match("/^([a-z0-9])+$/i", $str)) ? FALSE : TRUE;
+					break;
+					
+				case 'alpha_dash':
+					$result = (!preg_match("/^([-a-z0-9_-])+$/i", $str)) ? FALSE : TRUE;
+					break;
+					
+				case 'numeric':
+					$result = (!preg_match("/^[\-+]?[0-9]*(\.|,)?[0-9]+$/", $str)) ? FALSE : TRUE;
+					break;
+					
+				case 'range':
+					list($min, $max) = explode('-', $param);
+					if ($min === '')
+					{
+						$result = ($str >= $max) ? FALSE : TRUE;
+					}
+					else if ($max === '')
+					{
+						$result = ($str <= $min) ? FALSE : TRUE;
+					}
+					else
+					{
+						$result = ($str <= $min OR $str >= $max) ? FALSE : TRUE;
+					}
 					break;
 					
 				case 'regex':
 					$result = (!preg_match($param, $str)) ? FALSE : TRUE;
-					if (!$result) self:$_errors[] = array('field' => $field, 'rule' => $rule, 'label' => $label, 'param' => $param);
 					break;
 					
 				case 'matches':
@@ -279,14 +311,12 @@ class Form {
 					}			
 					$param = $_POST[$param];			
 					$result = ($str !== $param) ? FALSE : TRUE;
-					if (!$result) self:$_errors[] = array('field' => $field, 'rule' => $rule, 'label' => $label, 'param' => $param);
 					break;
 					
 				case 'unique':
-					list($table, $param)=explode('.', $param);
+					list($table, $param) = explode('.', $param);
 					$db =& database::get_instance();
 					$result = $db->exists($table, $param, $str);
-					if (!$result) self:$_errors[] = array('field' => $field, 'rule' => $rule, 'label' => $label, 'param' => $param);
 					break;
 					
 				case 'date':
@@ -296,23 +326,25 @@ class Form {
 					$month = date('m', $time);
 					$day	 = date('d', $time);			
 					$result = (!checkdate($month, $day, $year)) ? FALSE : $time;
-					if (!$result) self:$_errors[] = array('field' => $field, 'rule' => $rule, 'label' => $label, 'param' => $param);
 					break;
 					
 				case 'email':
 					$result = (!filter_var($str, FILTER_VALIDATE_EMAIL)) ? FALSE : TRUE;
-					if (!$result) self:$_errors[] = array('field' => $field, 'rule' => $rule, 'label' => $label, 'param' => $param);
 					break;
 					
 				case 'url':
 					$result = (!filter_var($str, FILTER_VALIDATE_URL)) ? FALSE : TRUE;
-					if (!$result) self:$_errors[] = array('field' => $field, 'rule' => $rule, 'label' => $label, 'param' => $param);
 					break;
 					
 				default:
 					$result = $rule($str);
 					
-				// TODO: Add 'number', 'int', 'Name', 'username', 'password', 'range'
+			}
+			
+			if (!$result)
+			{
+				self::$has_errors = TRUE;
+				self::$_errors[] = array('field' => $field, 'rule' => $rule, 'label' => $label, 'param' => $param);
 			}
 			
 			$str = (is_bool($result)) ? $str : $result;
@@ -330,12 +362,12 @@ class Form {
 	 * @param string	the (optional) field name
 	 * @return bool
 	 */	
-	public static function show_errors($delimiter = '<br />', $lang = 'english', $field = '')
+	public static function show_errors($field = '')
 	{
 		// Do nothing if there are no errors
 		if (empty(self::$_errors)) return;
 		
-		//l::lang('form_validation', $lang);
+		include_once SK_PATH.SYSTEM.'language/'.c::get('language').'/form_validation.php';
 		
 		$loop = FALSE;
 		
@@ -343,56 +375,60 @@ class Form {
 		{
 			if (empty($field) OR $error['field'] == $field)
 			{
-				if ($loop) echo $delimiter;
-				
-				switch ($error['rule'])
-				{
-					case 'required':					
-						echo "The $error['label'] field is required.";
-						// printf($error_msg['required'], $error['label']);
-						break;
-						
-					case 'max_length':
-						echo "The $error['label'] field cannot exceed $error['param'] characters in length.";
-						break;
-						
-					case 'min_length':
-						echo "The $error['label'] field must be at least $error['param'] characters in length.";
-						break;
-						
-					case 'regex':
-						echo "The $error['label'] field is not in the correct format.";
-						break;
-						
-					case 'matches':
-						echo "The $error['label'] field does not match the $error['param'] field.";
-						break;
-						
-					case 'unique':
-						echo "The $error['label'] field must contain a unique value.";
-						break;
-						
-					case 'date':
-						echo "The $error['label'] field is not a valid date.";
-						break;
-						
-					case 'email':
-						echo "The $error['label'] field is not a valid email address.";
-						break;
-						
-					case 'url':
-						echo "The $error['label'] field is not a valid URL";
-						break;
-						
-					default:
-						echo "The $error['label'] field is not valid.";
-				}
-				
+				if ($loop) echo c::get('error_delimiter') . "\n";				
+				printf($error_msg[$error['rule']], $error['label'], $error['param']);												
 				$loop = TRUE;
 			}
 		}
 	}
 
+}
+
+
+/**
+ * Input Class
+ *
+ * This class helps to handle input data
+ * Shortcut: 'i'
+ */
+
+class Input {
+
+	/**
+	 * Easy access to HTML form data
+	 *
+	 * @access		public
+	 * @param string	the field name
+	 * @return mixed
+	 */
+
+	// Post
+	// ---------------------------------------------------------------------------
+	public static function post($field)
+	{
+		return (isset($_POST[$field])) ? $_POST[$field] : false;
+	}
+
+	// Get
+	// ---------------------------------------------------------------------------
+	public static function get($field)
+	{
+		return (isset($_GET[$field])) ? $_GET[$field] : false;
+	}
+
+	// Files
+	// ---------------------------------------------------------------------------
+	public static function files($field)
+	{
+		return (isset($_FILES[$field])) ? $_FILES[$field] : false;
+	}
+
+	// Request
+	// ---------------------------------------------------------------------------
+	public static function request($field)
+	{
+		return (isset($_REQUEST[$field])) ? $_REQUEST[$field] : false;
+	}
 }
 
 
@@ -411,7 +447,7 @@ class Output {
 	 * @access		public
 	 * @return void
 	 */
-	function start() {
+	public static function start() {
 		ob_start();
 	}
 
@@ -422,7 +458,7 @@ class Output {
 	 * @param bool		do we want to return the content?
 	 * @return mixed
 	 */
-	function end($return = FALSE) {
+	public static function end($return = FALSE) {
 		if ($return)
 		{
 			$content = ob_get_contents();
@@ -440,7 +476,7 @@ class Output {
 	 * @param string	the charset
 	 * @return void
 	 */
-	function type($content_type = 'text', $charset = 'utf-8')
+	public static function type($content_type = 'text', $charset = 'utf-8')
 	{
 		// shortcuts for content types
 		$mime_types = array(
@@ -472,6 +508,7 @@ class Output {
 
 class_alias('Cookie', 'ck');
 class_alias('Form', 'f');
+class_alias('Input', 'i');
 class_alias('Output', 'o');
 
 
