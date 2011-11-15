@@ -4,13 +4,13 @@
  *
  * An open source no-framework PHP mvc framework
  *
- * @package		Skir
- * @author		Manuele J Sarfatti
+ * @package			Skir
+ * @author			Manuele J Sarfatti
  * @copyright		Copyright (c) 2011, Manuele J Sarfatti
- * @license		http://creativecommons.org/licenses/by-sa/3.0/
- * @link		http://skirframe.com
- * @version		0.9
- * @date		7 may 2011
+ * @license			http://creativecommons.org/licenses/by-sa/3.0/
+ * @link			http://skirframe.com
+ * @version			0.9.1
+ * @date			15 nov 2011
  */
 
 // ------------------------------------------------------------------------
@@ -101,7 +101,7 @@ function relative_time($time)
 }
 
 // Does a "header redirect" to the URI specified.
-function redirect($url = '/', $code = '301')
+function go($url = '/', $code = '301')
 {
 	// send an appropriate header
 	switch($code)
@@ -142,7 +142,7 @@ class Cookie {
 	/**
 	 * Set a cookie
 	 *
-	 * @access		public
+	 * @access			public
 	 * @param string	the cookie name
 	 * @param string	the value (if it is an array it will be converted to a json string)
 	 * @param number	the seconds you want the cookie to live from this moment
@@ -151,20 +151,20 @@ class Cookie {
 	 * @param bool		whether the cookie should only be transmitted over a secure HTTPS connection from the client
 	 * @return void
 	 */
-	public static function set($name, $value, $expire = 3600, $path = '/', $domain = '', $secure = FALSE)
+	public static function set($key, $value, $expire = 3600, $path = '/', $domain = '', $secure = FALSE)
 	{
 		if (is_array($value))
 		{
 			$value = json_encode($value);
 		}
-		$_COOKIE[$name] = $value;
-		setcookie($name, $value, time() + $expire, $path, $domain, $secure);
+		$_COOKIE[$key] = $value;
+		setcookie($key, $value, time() + $expire, $path, $domain, $secure);
 	}
 
 	/**
 	 * Get a cookie
 	 *
-	 * @access		public
+	 * @access			public
 	 * @param string	the cookie name
 	 * @param bool		whether the value should be treated as a json string and decoded to an assoc array
 	 * @return void
@@ -179,17 +179,17 @@ class Cookie {
 	/**
 	 * Delete a cookie
 	 *
-	 * @access		public
+	 * @access			public
 	 * @param string	the cookie name
 	 * @param string	the path (as set on cookie set)
 	 * @param string	the domain (as set on cookie set)
 	 * @param bool		safe connection (as set on cookie set)
 	 * @return void
 	 */
-	public static function delete($name, $path = '/', $domain = '', $secure = FALSE)
+	public static function delete($key, $path = '/', $domain = '', $secure = FALSE)
 	{
-		setcookie($name, false, time() - 3600, $path, $domain, $secure);
-		unset($_COOKIE[$name]);
+		setcookie($key, false, time() - 3600, $path, $domain, $secure);
+		unset($_COOKIE[$key]);
 	}
 
 }
@@ -204,15 +204,13 @@ class Cookie {
 
 class Form {
 		
-	// Initializes the 'errors' array
-	private static $_errors = array();
-	
-	public static $has_errors = FALSE;
+	private static $_errors = array(); // Holds every error found
+	private static $_has_errors = array(); // Holds the fields with errors
 
 	/**
 	 * Validate an input field
 	 *
-	 * @access		public
+	 * @access			public
 	 * @param string	the name of the field to be validated
 	 * @param string	the rule(s) to be applied
 	 * @param string	a human readable name for the field (to be used when showing errors)
@@ -220,6 +218,12 @@ class Form {
 	 */
 	public static function validate($field, $rules = '', $label = '')
 	{
+		// If no arguments are passed, see if there where any errors or return TRUE
+		if (empty($field)) return (!empty(self::$_errors)) ? FALSE : TRUE;
+		
+		// If no rule is passed, see if there where any errors in the specified field or return TRUE
+		if (empty($rules)) return (!empty(self::$_has_errors) && isset(self::$_has_errors[$field])) ? FALSE : TRUE;
+
 		// If the field label wasn't passed we use the field name
 		$label = ($label == '') ? $field : $label;
 		
@@ -230,7 +234,6 @@ class Form {
 			
 		foreach ($rules as $rule) {
 		
-			// Strip the parameter (if exists) from the rule
 			// Rules can contain a parameter: max_length[5]
 			$param = FALSE;
 			if (preg_match("/(.*?)\[(.*)\]/", $rule, $match))
@@ -255,7 +258,8 @@ class Form {
 				case 'max_length':
 					if (preg_match("/[^0-9]/", $param))
 					{
-						$result = TRUE;
+						$result = FALSE;
+						break 2;
 					}
 					$result = (strlen($str) > $param) ? FALSE : TRUE;
 					break;
@@ -263,7 +267,8 @@ class Form {
 				case 'min_length':
 					if (preg_match("/[^0-9]/", $param))
 					{
-						$result = TRUE;
+						$result = FALSE;
+						break 2;
 					}
 					$result = (strlen($str) < $param) ? FALSE : TRUE;
 					break;
@@ -341,22 +346,25 @@ class Form {
 					
 			}
 			
-			if (!$result)
+			if ($result === FALSE)
 			{
-				self::$has_errors = TRUE;
+				self::$_has_errors[$field] = TRUE;
 				self::$_errors[] = array('field' => $field, 'rule' => $rule, 'label' => $label, 'param' => $param);
 			}
+			
+			// If the field was required but is empty, skip successive checks
+			if ($rule == 'required' && $result === FALSE) break;
 			
 			$str = (is_bool($result)) ? $str : $result;
 		}
 		
-		return (empty(self::$_errors)) ? $str : FALSE;
+		return $str;
 	}
 	
 	/**
 	 * Show errors from validation
 	 *
-	 * @access		public
+	 * @access			public
 	 * @param string	the HTML delimiter between error messages
 	 * @param string	the language code
 	 * @param string	the (optional) field name
@@ -365,9 +373,9 @@ class Form {
 	public static function show_errors($field = '')
 	{
 		// Do nothing if there are no errors
-		if (empty(self::$_errors)) return;
+		if (empty(self::$_errors)) return FALSE;
 		
-		include_once SK_PATH.SYSTEM.'language/'.c::get('language').'/form_validation.php';
+		include SK_PATH.SYSTEM.'language/'.c::get('language').'/form_validation.lang.php';
 		
 		$loop = FALSE;
 		
@@ -397,7 +405,7 @@ class Input {
 	/**
 	 * Easy access to HTML form data
 	 *
-	 * @access		public
+	 * @access			public
 	 * @param string	the field name
 	 * @return mixed
 	 */
@@ -444,7 +452,7 @@ class Output {
 	/**
 	 * Start object buffering
 	 *
-	 * @access		public
+	 * @access			public
 	 * @return void
 	 */
 	public static function start() {
@@ -454,7 +462,7 @@ class Output {
 	/**
 	 * End object buffering and optionally return the content without flushing it
 	 *
-	 * @access		public
+	 * @access			public
 	 * @param bool		do we want to return the content?
 	 * @return mixed
 	 */
@@ -471,7 +479,7 @@ class Output {
 	/**
 	 * Set the content type and charset of the resource
 	 *
-	 * @access		public
+	 * @access			public
 	 * @param string	a shortcut for the content type or a mime type
 	 * @param string	the charset
 	 * @return void
@@ -482,6 +490,7 @@ class Output {
 		$mime_types = array(
 			'text'	=> 'text/plain',
 			'html'	=> 'text/html',
+			'xml'	=> 'text/xml',
 			'css'	=> 'text/css',
 			'js'	=> 'text/javascript',
 			'json'	=> 'application/json',

@@ -4,13 +4,13 @@
  *
  * An open source no-framework PHP mvc framework
  *
- * @package		Skir
- * @author		Manuele J Sarfatti
+ * @package			Skir
+ * @author			Manuele J Sarfatti
  * @copyright		Copyright (c) 2011, Manuele J Sarfatti
- * @license		http://creativecommons.org/licenses/by-sa/3.0/
- * @link		http://skirframe.com
- * @version		0.9
- * @date		7 may 2011
+ * @license			http://creativecommons.org/licenses/by-sa/3.0/
+ * @link			http://skirframe.com
+ * @version			0.9.1
+ * @date			15 nov 2011
  */
 
 // ------------------------------------------------------------------------
@@ -92,7 +92,6 @@
 
 	// Execute!
 	call_user_func_array(array($SK, $method ? $method : 'index'), $params ? explode('/', $params) : array());
-
 
 /* End of file bootstrap.php
   Location: ./system/core/bootstrap.php */

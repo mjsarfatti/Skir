@@ -4,13 +4,13 @@
  *
  * An open source no-framework PHP mvc framework
  *
- * @package		Skir
- * @author		Manuele J Sarfatti
+ * @package			Skir
+ * @author			Manuele J Sarfatti
  * @copyright		Copyright (c) 2011, Manuele J Sarfatti
- * @license		http://creativecommons.org/licenses/by-sa/3.0/
- * @link		http://skirframe.com
- * @version		0.9
- * @date		7 may 2011
+ * @license			http://creativecommons.org/licenses/by-sa/3.0/
+ * @link			http://skirframe.com
+ * @version			0.9.1
+ * @date			15 nov 2011
  */
 
 // ------------------------------------------------------------------------
@@ -39,7 +39,7 @@ class Config {
 	/**
 	 * Getter
 	 *
-	 * @access		public
+	 * @access			public
 	 * @param string	the desired property
 	 * @param string	an optional default value returned if the property is not found
 	 * @return string
@@ -53,7 +53,7 @@ class Config {
 	/**
 	 * Setter
 	 *
-	 * @access		public
+	 * @access			public
 	 * @param string	the property name
 	 * @param string	the value to be assigned to the property (optional if the property is an array)
 	 * @return void
@@ -73,7 +73,7 @@ class Config {
 	/**
 	 * Loader
 	 *
-	 * @access		public
+	 * @access			public
 	 * @param string	the config file name
 	 * @return array	the whole config array
 	 */
@@ -107,7 +107,7 @@ class Load {
 	 *
 	 * General file loader helper method
 	 *
-	 * @access		private
+	 * @access			private
 	 * @param string	the resource's location
 	 * @return boolean
 	 */
@@ -126,7 +126,7 @@ class Load {
 	/**
 	 * Model Loader
 	 *
-	 * @access		public
+	 * @access			public
 	 * @param string	the real model name
 	 * @param string	an optional custom model name
 	 * @return boolean
@@ -152,7 +152,7 @@ class Load {
 	/**
 	 * Library Loader
 	 *
-	 * @access		public
+	 * @access			public
 	 * @param string	the real library name
 	 * @param string	an optional custom library name
 	 * @return boolean
@@ -178,7 +178,7 @@ class Load {
 	/**
 	 * Helper Loader
 	 *
-	 * @access		public
+	 * @access			public
 	 * @param string	the helper name
 	 * @return boolean
 	 */
@@ -204,7 +204,7 @@ class View {
 	/**
 	 * View Loader
 	 *
-	 * @access		public
+	 * @access			public
 	 * @param string	the view name
 	 * @param mixed		the optional parameters to pass to the view file
 	 * @return void
@@ -229,7 +229,7 @@ class View {
 	/**
 	 * Variable Setter
 	 *
-	 * @access		public
+	 * @access			public
 	 * @param string	the variable name
 	 * @param string	the variable value
 	 * @return void
@@ -242,14 +242,36 @@ class View {
 	/**
 	 * Error Handler
 	 *
-	 * @access		public
-	 * @param string	the requested url
+	 * @access			public
+	 * @param int		the error code
 	 * @return void
 	 */
-	public static function error($code = '404')
+	public static function error($code = '404', $string = '')
 	{
-		//include SK_PATH.APPLICATION.'errors/'.$code.'.php';
-		die("404 Page Not Found");
+		switch ($code)
+		{
+			case '400':
+				$header_string = '400 Bad Request';
+				break;
+			case '401':
+				$header_string = '401 Unauthorized';
+				break;
+			case '403':
+				$header_string = '403 Forbidden';
+				break;
+			case '404':
+				$header_string = '404 Not Found';
+				break;
+			case '418':
+				$header_string = '418 I\'m a Teapot'; //http://en.wikipedia.org/wiki/Hyper_Text_Coffee_Pot_Control_Protocol
+				break;
+			default:
+				$header_string = $string;
+		}
+
+		header('HTTP/1.0 '.$header_string);
+		include SK_PATH.APPLICATION.'views/errors/'.$code.'.php';
+		die;
     }
 
 }
@@ -274,7 +296,7 @@ class Database {
 	 *
 	 * Connects to the database
 	 *
-	 * @access		private
+	 * @access			private
 	 * @param string	the database driver
 	 * @param string	the database host
 	 * @param string	the database name, or path
@@ -307,7 +329,7 @@ class Database {
 	/**
 	 * Singleton Pattern
 	 *
-	 * @access 		public
+	 * @access 			public
 	 * @return object	instance of the Database class
 	 */
 	public static function &get_instance()
@@ -329,7 +351,7 @@ class Database {
 	 *
 	 * Executes the supplied query with bindings
 	 *
-	 * @access		private
+	 * @access			private
 	 * @param string	the SQL query to be executed
 	 * @param array		the values to bind to the query
 	 * @return mixed	result set if SELECT, id if INSERT, TRUE if UPDATE, rows affected if other, FALSE on failure
@@ -374,7 +396,7 @@ class Database {
 	 *
 	 * Executes a raw query, possibly with bindings
 	 *
-	 * @access		public
+	 * @access			public
 	 * @param string	the SQL statement
 	 * @param array		array of values to bind to placeholders
 	 * @return mixed	depending on the query
@@ -392,10 +414,10 @@ class Database {
 	 *
 	 * Builds an INSERT or UPDATE query, based on the optional $id param
 	 *
-	 * $this->db->set('table', array(column => value))	INSERT INTO $table ($column1, ...) VALUES ($value1, ...)
+	 * $this->db->set('table', array(column => value))		INSERT INTO $table ($column1, ...) VALUES ($value1, ...)
 	 * $this->db->set('table', array(column => value), 10)	UPDATE $table SET $column1 = '$value1', ... WHERE id = 10
 	 *
-	 * @access		public
+	 * @access			public
 	 * @param string	the name of the table
 	 * @param array		associative array with column => value pairs
 	 * @param int		the id of the record to update
@@ -441,12 +463,12 @@ class Database {
 	 *
 	 * Builds a SELECT query, based on the arguments supplied
 	 *
-	 * $this->db->get('table')				SELECT * FROM $table
-	 * $this->db->get('table', 10)				SELECT * FROM $table WHERE id = 10
-	 * $this->db->get('table', array(columns))		SELECT column1, ... FROM $table
+	 * $this->db->get('table')							SELECT * FROM $table
+	 * $this->db->get('table', 10)						SELECT * FROM $table WHERE id = 10
+	 * $this->db->get('table', array(columns))			SELECT column1, ... FROM $table
 	 * $this->db->get('table', array(columns), 10)		SELECT column1, ... FROM $table WHERE id = 10
 	 *
-	 * @access		public
+	 * @access			public
 	 * @param string	the name of the table
 	 * @param int/array	the requested id or an array of columns
 	 * @param int		the requested id (if previous parameter is array)
@@ -497,9 +519,9 @@ class Database {
 	 *
 	 * $this->db->delete('table', 10)	DELETE FROM $table WHERE id = 10
 	 *
-	 * @access		public
+	 * @access			public
 	 * @param string	the name of the table
-	 * @param int/array	the id of the record to be deleted
+	 * @param int		the id of the record to be deleted
 	 * @return bool
 	 */
 	public function delete($table, $id)
@@ -516,7 +538,7 @@ class Database {
 	 *
 	 * $this->db->exists('table', 10)	SELECT id FROM $table WHERE $param = $value
 	 *
-	 * @access		public
+	 * @access			public
 	 * @param string	the name of the table
 	 * @param string	the name of the column
 	 * @param string	the value we check against
@@ -533,7 +555,7 @@ class Database {
 	/**
 	 * Get last query
 	 *
-	 * @access		public
+	 * @access			public
 	 * @return string	last executed querying
 	 */
 	public function last_query()
@@ -544,7 +566,7 @@ class Database {
 	/**
 	 * Get last bindings values
 	 *
-	 * @access		public
+	 * @access			public
 	 * @return string	last bindings values separated by ','
 	 */
 	public function last_bindings()
